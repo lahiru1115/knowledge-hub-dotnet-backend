@@ -48,9 +48,9 @@ public class ResourcesController(AppDbContext context) : ControllerBase
             var keyword = search.Trim().ToLower();
 
             query = query.Where(x =>
-                x.Title.ToLower().Contains(keyword) ||
-                (x.Notes != null && x.Notes.ToLower().Contains(keyword)) ||
-                (x.Url != null && x.Url.ToLower().Contains(keyword))
+                x.Title.Contains(keyword, StringComparison.CurrentCultureIgnoreCase) ||
+                (x.Notes != null && x.Notes.Contains(keyword, StringComparison.CurrentCultureIgnoreCase)) ||
+                (x.Url != null && x.Url.Contains(keyword, StringComparison.CurrentCultureIgnoreCase))
             );
         }
 
