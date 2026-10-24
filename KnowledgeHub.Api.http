@@ -1,6 +1,57 @@
-@KnowledgeHub.Api_HostAddress = http://localhost:5113
+@baseUrl = http://localhost:5113/api
+# Paste the access_token from the login response here
+@token =
 
-GET {{KnowledgeHub.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
 
-###
+{
+  "name": "Test User",
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### Me
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+### Dashboard
+GET {{baseUrl}}/dashboard
+Authorization: Bearer {{token}}
+
+### Create collection
+POST {{baseUrl}}/collections
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Backend",
+  "description": "APIs and frameworks"
+}
+
+### List collections
+GET {{baseUrl}}/collections
+Authorization: Bearer {{token}}
+
+### Create tag
+POST {{baseUrl}}/tags
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "python"
+}
+
+### List resources (search + paging)
+GET {{baseUrl}}/resources?search=fastapi&page=1&pageSize=20
+Authorization: Bearer {{token}}
