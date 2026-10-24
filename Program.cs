@@ -70,11 +70,44 @@ builder.Services
                 Encoding.UTF8.GetBytes(jwt["Key"]!)
             )
         };
+
+        // Browser clients send the token in an httpOnly cookie.
+        // If there is no cookie, the normal Authorization: Bearer header is used.
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var cookieToken = context.Request.Cookies["access_token"];
+
+                if (!string.IsNullOrEmpty(cookieToken))
+                {
+                    context.Token = cookieToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
     });
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:3000")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+// CORS must run before authentication so the browser's preflight
+// OPTIONS request (which has no cookie) is answered correctly.
+app.UseCors("Frontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
