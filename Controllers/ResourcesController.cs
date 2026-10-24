@@ -45,12 +45,12 @@ public class ResourcesController(AppDbContext context) : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var keyword = search.Trim().ToLower();
+            var keyword = search.Trim();
 
             query = query.Where(x =>
-                x.Title.Contains(keyword, StringComparison.CurrentCultureIgnoreCase) ||
-                (x.Notes != null && x.Notes.Contains(keyword, StringComparison.CurrentCultureIgnoreCase)) ||
-                (x.Url != null && x.Url.Contains(keyword, StringComparison.CurrentCultureIgnoreCase))
+                EF.Functions.ILike(x.Title, $"%{keyword}%") ||
+                (x.Notes != null && EF.Functions.ILike(x.Notes, $"%{keyword}%")) ||
+                (x.Url != null && EF.Functions.ILike(x.Url, $"%{keyword}%"))
             );
         }
 
