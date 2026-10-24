@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using KnowledgeHub.Api.Data;
 using KnowledgeHub.Api.DTOs.Dashboard;
+using KnowledgeHub.Api.DTOs.Resources;
+using KnowledgeHub.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -34,11 +36,32 @@ public class DashboardController(AppDbContext context) : ControllerBase
 
         var tagsCount = await _context.Tags.CountAsync();
 
+        var recentResources = await _context.Resources
+            .Where(x => x.Collection.UserId == userId)
+            .OrderByDescending(x => x.CreatedAt)
+            .Take(5)
+            .Select(ResourceProjection.ToResponse)
+            .ToListAsync();
+
+        var countsByType = await _context.Resources
+            .Where(x => x.Collection.UserId == userId)
+            .GroupBy(x => x.ResourceType)
+            .Select(g => new { Type = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        // Always return every type, even when the count is 0.
+        var typeBreakdown = Enum.GetValues<ResourceType>().ToDictionary(
+            type => type.ToString().ToLowerInvariant(),
+            type => countsByType.FirstOrDefault(c => c.Type == type)?.Count ?? 0
+        );
+
         return Ok(new DashboardResponse
         {
             CollectionsCount = collectionsCount,
             ResourcesCount = resourcesCount,
-            TagsCount = tagsCount
+            TagsCount = tagsCount,
+            RecentResources = recentResources,
+            TypeBreakdown = typeBreakdown
         });
     }
 }

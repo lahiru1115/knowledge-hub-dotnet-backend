@@ -30,10 +30,7 @@ public class AuthController(
 
         if (exists)
         {
-            return BadRequest(new
-            {
-                message = "Email already exists"
-            });
+            return Problem(detail: "Email already exists", statusCode: 409);
         }
 
         var user = new User
@@ -64,10 +61,7 @@ public class AuthController(
 
         if (user == null)
         {
-            return Unauthorized(new
-            {
-                message = "Invalid credentials"
-            });
+            return Problem(detail: "Invalid credentials", statusCode: 401);
         }
 
         var isPasswordValid = BCrypt.Net.BCrypt.Verify(
@@ -77,10 +71,7 @@ public class AuthController(
 
         if (!isPasswordValid)
         {
-            return Unauthorized(new
-            {
-                message = "Invalid credentials"
-            });
+            return Problem(detail: "Invalid credentials", statusCode: 401);
         }
 
         var token = _tokenService.CreateToken(user);

@@ -55,6 +55,8 @@ builder.Services
         );
     });
 
+builder.Services.AddProblemDetails();
+
 builder.Services.AddScoped<TokenService>();
 
 var jwt = builder.Configuration.GetSection("Jwt");
@@ -110,6 +112,10 @@ builder.Services.AddCors(options =>
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+// Unhandled exceptions and bare 401/404 responses become Problem Details JSON.
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 
 // CORS must run before authentication so the browser's preflight
 // OPTIONS request (which has no cookie) is answered correctly.

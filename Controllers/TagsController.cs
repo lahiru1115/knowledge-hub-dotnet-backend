@@ -45,10 +45,7 @@ public class TagsController(AppDbContext context) : ControllerBase
 
         if (tag == null)
         {
-            return NotFound(new
-            {
-                message = "Tag not found"
-            });
+            return Problem(detail: "Tag not found", statusCode: 404);
         }
 
         return Ok(tag);
@@ -61,20 +58,14 @@ public class TagsController(AppDbContext context) : ControllerBase
 
         if (string.IsNullOrWhiteSpace(name))
         {
-            return BadRequest(new
-            {
-                message = "Tag name is required"
-            });
+            return Problem(detail: "Tag name is required", statusCode: 400);
         }
 
         var exists = await _context.Tags.AnyAsync(x => x.Name == name);
 
         if (exists)
         {
-            return BadRequest(new
-            {
-                message = "Tag already exists"
-            });
+            return Problem(detail: "Tag already exists", statusCode: 409);
         }
 
         var tag = new Tag
@@ -103,20 +94,14 @@ public class TagsController(AppDbContext context) : ControllerBase
 
         if (tag == null)
         {
-            return NotFound(new
-            {
-                message = "Tag not found"
-            });
+            return Problem(detail: "Tag not found", statusCode: 404);
         }
 
         var name = request.Name.Trim().ToLower();
 
         if (string.IsNullOrWhiteSpace(name))
         {
-            return BadRequest(new
-            {
-                message = "Tag name is required"
-            });
+            return Problem(detail: "Tag name is required", statusCode: 400);
         }
 
         var exists = await _context.Tags
@@ -124,10 +109,7 @@ public class TagsController(AppDbContext context) : ControllerBase
 
         if (exists)
         {
-            return BadRequest(new
-            {
-                message = "Tag already exists"
-            });
+            return Problem(detail: "Tag already exists", statusCode: 409);
         }
 
         tag.Name = name;
@@ -149,10 +131,7 @@ public class TagsController(AppDbContext context) : ControllerBase
 
         if (tag == null)
         {
-            return NotFound(new
-            {
-                message = "Tag not found"
-            });
+            return Problem(detail: "Tag not found", statusCode: 404);
         }
 
         _context.Tags.Remove(tag);

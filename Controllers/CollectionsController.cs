@@ -34,6 +34,7 @@ public class CollectionsController(AppDbContext context) : ControllerBase
                 Id = x.Id,
                 Name = x.Name,
                 Description = x.Description,
+                ResourceCount = x.Resources.Count,
                 CreatedAt = x.CreatedAt
             })
             .ToListAsync();
@@ -53,16 +54,14 @@ public class CollectionsController(AppDbContext context) : ControllerBase
                 Id = x.Id,
                 Name = x.Name,
                 Description = x.Description,
+                ResourceCount = x.Resources.Count,
                 CreatedAt = x.CreatedAt
             })
             .FirstOrDefaultAsync();
 
         if (collection == null)
         {
-            return NotFound(new
-            {
-                message = "Collection not found"
-            });
+            return Problem(detail: "Collection not found", statusCode: 404);
         }
 
         return Ok(collection);
@@ -107,10 +106,7 @@ public class CollectionsController(AppDbContext context) : ControllerBase
 
         if (collection == null)
         {
-            return NotFound(new
-            {
-                message = "Collection not found"
-            });
+            return Problem(detail: "Collection not found", statusCode: 404);
         }
 
         collection.Name = request.Name.Trim();
@@ -123,6 +119,7 @@ public class CollectionsController(AppDbContext context) : ControllerBase
             Id = collection.Id,
             Name = collection.Name,
             Description = collection.Description,
+            ResourceCount = await _context.Resources.CountAsync(r => r.CollectionId == collection.Id),
             CreatedAt = collection.CreatedAt
         });
     }
@@ -137,10 +134,7 @@ public class CollectionsController(AppDbContext context) : ControllerBase
 
         if (collection == null)
         {
-            return NotFound(new
-            {
-                message = "Collection not found"
-            });
+            return Problem(detail: "Collection not found", statusCode: 404);
         }
 
         _context.Collections.Remove(collection);

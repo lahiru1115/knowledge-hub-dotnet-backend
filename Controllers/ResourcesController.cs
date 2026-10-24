@@ -27,6 +27,10 @@ public class ResourcesController(AppDbContext context) : ControllerBase
         [FromQuery] string? search,
         [FromQuery(Name = "collection_id")] Guid? collectionId,
         [FromQuery(Name = "resource_type")] ResourceType? resourceType,
+        [FromQuery(Name = "tag_id")] Guid? tagId,
+        [FromQuery(Name = "created_from")] DateTime? createdFrom,
+        [FromQuery(Name = "created_to")] DateTime? createdTo,
+        [FromQuery] string sort = "newest",
         [FromQuery] int page = 1,
         [FromQuery(Name = "page_size")] int pageSize = 20
     )
@@ -65,30 +69,48 @@ public class ResourcesController(AppDbContext context) : ControllerBase
             query = query.Where(x => x.ResourceType == resourceType.Value);
         }
 
+        if (tagId.HasValue)
+        {
+            query = query.Where(x => x.ResourceTags.Any(rt => rt.TagId == tagId.Value));
+        }
+
+        // Dates arrive without a time zone; Npgsql needs UTC.
+        if (createdFrom.HasValue)
+        {
+            var from = DateTime.SpecifyKind(createdFrom.Value.Date, DateTimeKind.Utc);
+            query = query.Where(x => x.CreatedAt >= from);
+        }
+
+        if (createdTo.HasValue)
+        {
+            // created_to includes the whole day.
+            var to = DateTime.SpecifyKind(createdTo.Value.Date, DateTimeKind.Utc).AddDays(1);
+            query = query.Where(x => x.CreatedAt < to);
+        }
+
+        var ordered = sort.ToLowerInvariant() switch
+        {
+            "newest" => query.OrderByDescending(x => x.CreatedAt),
+            "oldest" => query.OrderBy(x => x.CreatedAt),
+            "title_asc" => query.OrderBy(x => x.Title),
+            _ => null
+        };
+
+        if (ordered == null)
+        {
+            return Problem(
+                detail: "sort must be one of: newest, oldest, title_asc",
+                statusCode: 400
+            );
+        }
+
         var total = await query.CountAsync();
 
-        var resources = await query
-            .OrderByDescending(x => x.CreatedAt)
+        var resources = await ordered
+            .ThenBy(x => x.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(x => new ResourceResponse
-            {
-                Id = x.Id,
-                CollectionId = x.CollectionId,
-                Title = x.Title,
-                Url = x.Url,
-                Notes = x.Notes,
-                ResourceType = x.ResourceType,
-                CreatedAt = x.CreatedAt,
-                Tags = x.ResourceTags
-                    .Select(rt => new TagResponse
-                    {
-                        Id = rt.Tag.Id,
-                        Name = rt.Tag.Name,
-                        CreatedAt = rt.Tag.CreatedAt
-                    })
-                    .ToList()
-            })
+            .Select(ResourceProjection.ToResponse)
             .ToListAsync();
 
         return Ok(new PaginatedResourcesResponse
@@ -110,32 +132,12 @@ public class ResourcesController(AppDbContext context) : ControllerBase
                 .ThenInclude(x => x.Tag)
             .Include(x => x.Collection)
             .Where(x => x.Id == id && x.Collection.UserId == userId)
-            .Select(x => new ResourceResponse
-            {
-                Id = x.Id,
-                CollectionId = x.CollectionId,
-                Title = x.Title,
-                Url = x.Url,
-                Notes = x.Notes,
-                ResourceType = x.ResourceType,
-                CreatedAt = x.CreatedAt,
-                Tags = x.ResourceTags
-                    .Select(rt => new TagResponse
-                    {
-                        Id = rt.Tag.Id,
-                        Name = rt.Tag.Name,
-                        CreatedAt = rt.Tag.CreatedAt
-                    })
-                    .ToList()
-            })
+            .Select(ResourceProjection.ToResponse)
             .FirstOrDefaultAsync();
 
         if (resource == null)
         {
-            return NotFound(new
-            {
-                message = "Resource not found"
-            });
+            return Problem(detail: "Resource not found", statusCode: 404);
         }
 
         return Ok(resource);
@@ -151,10 +153,7 @@ public class ResourcesController(AppDbContext context) : ControllerBase
 
         if (!collectionExists)
         {
-            return NotFound(new
-            {
-                message = "Collection not found"
-            });
+            return Problem(detail: "Collection not found", statusCode: 404);
         }
 
         var resource = new Resource
@@ -203,10 +202,7 @@ public class ResourcesController(AppDbContext context) : ControllerBase
 
         if (resource == null)
         {
-            return NotFound(new
-            {
-                message = "Resource not found"
-            });
+            return Problem(detail: "Resource not found", statusCode: 404);
         }
 
         resource.Title = request.Title.Trim();
@@ -248,10 +244,7 @@ public class ResourcesController(AppDbContext context) : ControllerBase
 
         if (resource == null)
         {
-            return NotFound(new
-            {
-                message = "Resource not found"
-            });
+            return Problem(detail: "Resource not found", statusCode: 404);
         }
 
         _context.Resources.Remove(resource);
