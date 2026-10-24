@@ -13,9 +13,11 @@ namespace KnowledgeHub.Api.Controllers;
 [Route("api/auth")]
 public class AuthController(
     AppDbContext context,
-    TokenService tokenService
+    TokenService tokenService,
+    IConfiguration configuration
     ) : ControllerBase
 {
+    private readonly IConfiguration _configuration = configuration;
     private readonly AppDbContext _context = context;
     private readonly TokenService _tokenService = tokenService;
 
@@ -83,6 +85,16 @@ public class AuthController(
 
         var token = _tokenService.CreateToken(user);
 
+        Response.Cookies.Append("access_token", token, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = Request.IsHttps,
+            SameSite = SameSiteMode.Lax,
+            Expires = DateTimeOffset.UtcNow.AddMinutes(
+                _configuration.GetValue<double>("Jwt:ExpiresInMinutes")
+            )
+        });
+
         return Ok(new AuthResponse
         {
             AccessToken = token,
@@ -120,6 +132,8 @@ public class AuthController(
     [HttpPost("logout")]
     public IActionResult Logout()
     {
+        Response.Cookies.Delete("access_token");
+
         return Ok(new
         {
             message = "Logged out successfully"
