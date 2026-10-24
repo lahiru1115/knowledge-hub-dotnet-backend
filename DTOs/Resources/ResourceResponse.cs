@@ -1,3 +1,6 @@
+using KnowledgeHub.Api.DTOs.Tags;
+using KnowledgeHub.Api.Models;
+
 namespace KnowledgeHub.Api.DTOs.Resources;
 
 public class ResourceResponse
@@ -7,7 +10,7 @@ public class ResourceResponse
     public string Title { get; set; } = string.Empty;
     public string? Url { get; set; }
     public string? Notes { get; set; }
-    public string ResourceType { get; set; } = string.Empty;
+    public ResourceType ResourceType { get; set; }
     public DateTime CreatedAt { get; set; }
-    public List<string> Tags { get; set; } = [];
+    public List<TagResponse> Tags { get; set; } = [];
 }

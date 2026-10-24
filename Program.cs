@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using KnowledgeHub.Api.Data;
 using KnowledgeHub.Api.Services;
@@ -44,8 +45,13 @@ builder.Services
     .AddControllers()
     .AddJsonOptions(options =>
     {
+        // JSON property names: PageSize -> page_size
+        options.JsonSerializerOptions.PropertyNamingPolicy =
+            JsonNamingPolicy.SnakeCaseLower;
+
+        // Enum values: ResourceType.Article -> "article"
         options.JsonSerializerOptions.Converters.Add(
-            new JsonStringEnumConverter()
+            new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower)
         );
     });
 

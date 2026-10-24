@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using KnowledgeHub.Api.Data;
 using KnowledgeHub.Api.DTOs.Resources;
+using KnowledgeHub.Api.DTOs.Tags;
 using KnowledgeHub.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,10 +25,10 @@ public class ResourcesController(AppDbContext context) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<PaginatedResourcesResponse>> GetAll(
         [FromQuery] string? search,
-        [FromQuery] Guid? collectionId,
-        [FromQuery] ResourceType? resourceType,
+        [FromQuery(Name = "collection_id")] Guid? collectionId,
+        [FromQuery(Name = "resource_type")] ResourceType? resourceType,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20
+        [FromQuery(Name = "page_size")] int pageSize = 20
     )
     {
         var userId = GetUserId();
@@ -77,10 +78,15 @@ public class ResourcesController(AppDbContext context) : ControllerBase
                 Title = x.Title,
                 Url = x.Url,
                 Notes = x.Notes,
-                ResourceType = x.ResourceType.ToString().ToLower(),
+                ResourceType = x.ResourceType,
                 CreatedAt = x.CreatedAt,
                 Tags = x.ResourceTags
-                    .Select(rt => rt.Tag.Name)
+                    .Select(rt => new TagResponse
+                    {
+                        Id = rt.Tag.Id,
+                        Name = rt.Tag.Name,
+                        CreatedAt = rt.Tag.CreatedAt
+                    })
                     .ToList()
             })
             .ToListAsync();
@@ -111,10 +117,15 @@ public class ResourcesController(AppDbContext context) : ControllerBase
                 Title = x.Title,
                 Url = x.Url,
                 Notes = x.Notes,
-                ResourceType = x.ResourceType.ToString().ToLower(),
+                ResourceType = x.ResourceType,
                 CreatedAt = x.CreatedAt,
                 Tags = x.ResourceTags
-                    .Select(rt => rt.Tag.Name)
+                    .Select(rt => new TagResponse
+                    {
+                        Id = rt.Tag.Id,
+                        Name = rt.Tag.Name,
+                        CreatedAt = rt.Tag.CreatedAt
+                    })
                     .ToList()
             })
             .FirstOrDefaultAsync();
